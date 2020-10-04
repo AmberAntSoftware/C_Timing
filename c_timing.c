@@ -4,7 +4,9 @@
     static LARGE_INTEGER X_TIM_FREQUENCY = {0,0,0,0,0};
     static void X_TIM_initFrequency(){
         if(X_TIM_FREQUENCY.QuadPart == 0){
-            QueryPerformanceFrequency(&X_TIM_FREQUENCY);
+            if(QueryPerformanceFrequency(&X_TIM_FREQUENCY) == 0){
+                X_TIM_FREQUENCY.QuadPart = 1;
+            }
         }
     }
 #endif
@@ -24,6 +26,7 @@ TIM_Timestamp* TIM_newTimestamp(){
 TIM_ERROR_ENUM TIM_initTimestamp(TIM_Timestamp *timestamp){
     /**TODO include windows support**/
 #ifdef _WIN32
+    timestamp->time = timeGetTime();
     if(QueryPerformanceCounter(&timestamp->mark) == 0){
         return TIM_ERROR_FAILURE;
     }
@@ -63,11 +66,39 @@ void TIM_freeTimestampData(TIM_Timestamp *timestamp){
 unsigned long long int TIM_TimestampDiff(TIM_Timestamp *start, TIM_Timestamp *end, unsigned int unitsPerSecond){
 #ifdef _WIN32
 
+    //*
     X_TIM_initFrequency();
     unsigned long long int diff = end->mark.QuadPart;
     diff -= start->mark.QuadPart;
-    diff *= divConvert;
+    diff *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
     diff /= X_TIM_FREQUENCY.QuadPart;
+
+    /*/
+
+    X_TIM_initFrequency();
+
+    unsigned long long int diffMillis;
+    unsigned long long int diffNano;
+    unsigned long long int diff;
+
+    diffMillis = end->time - start->time;
+    if(end->mark.QuadPart < start->mark.QuadPart){
+        diffNano = start->mark.QuadPart - end->mark.QuadPart;
+    }else{
+        diffNano = end->mark.QuadPart - start->mark.QuadPart;
+    }
+    diffNano %= TIM_X_MILLISECONDS_IN_NANOSECOND;
+    diffMillis*=TIM_X_MICROSECONDS_IN_SECOND;
+    diffMillis+=diffNano;
+    diff = diffMillis;
+    diff *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
+    diff /= X_TIM_FREQUENCY.QuadPart;
+
+    diff = (end->time - start->time);//*1000000  / (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
+
+    //*/
 
 #else
 
@@ -110,7 +141,7 @@ unsigned long long int TIM_TimestampDiffNano(TIM_Timestamp *start, TIM_Timestamp
 
 
 TIM_ERROR_ENUM TIM_sleepMillis(unsigned int milliseconds) {
-    return TIM_sleepMicro(milliseconds*TIM_X_MILLISECONDS_IN_SECOND);
+    return TIM_sleepNano(milliseconds*TIM_X_MILLISECONDS_IN_NANOSECOND);
 }
 
 TIM_ERROR_ENUM TIM_sleepMicro(unsigned int microseconds){
@@ -126,27 +157,25 @@ TIM_ERROR_ENUM TIM_sleepNano(unsigned int nanoseconds) {
 
 #ifdef WIN32
 
-    X_TIM_initFrequency();
+   // X_TIM_initFrequency();
 
+    unsigned int microseconds = nanoseconds/TIM_X_MICROSECONDS_IN_NANOSECOND;
     LARGE_INTEGER start, end;
     QueryPerformanceCounter(&start);
-
-    nanoseconds/=TIM_X_MICROSECONDS_IN_NANOSECOND;
-    if(nanoseconds == 0)}{
-        /**limit to 1 microsecond since nonzero**/
-        nanoseconds = 1;
+    if(microseconds >= 1000){
+        MMRESULT gran = timeBeginPeriod(1);
+        _sleep(microseconds/1000);
+        timeEndPeriod(gran);
     }
 
-    if(nanoseconds >= TIM_X_MICROSECONDS_IN_SECOND){
-        Sleep(nanoseconds/TIM_X_MICROSECONDS_IN_SECOND);
-        nanoseconds = nanoseconds%TIM_X_MICROSECONDS_IN_SECOND;
-    }
+    //**
+    X_TIM_initFrequency();
 
-    QueryPerformanceCounter(&start);
+
     do{
         QueryPerformanceCounter(&end);
-    }while( (((end.QuadPart - start.QuadPart)*TIM_X_MICROSECONDS_IN_SECOND)/X_TIM_FREQUENCY.QuadPart) < nanoseconds);
-
+    }while( (((end.QuadPart - start.QuadPart)*TIM_X_MICROSECONDS_IN_SECOND)/X_TIM_FREQUENCY.QuadPart) < microseconds);
+    //**/
 #else
     #if _POSIX_C_SOURCE >= 199309L
         struct timespec timestamp;

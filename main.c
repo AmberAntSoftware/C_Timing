@@ -26,16 +26,35 @@ void testSleep_decay(){
     }
 }
 
+void testSleep_const(){
+    TIM_Timestamp fps_start, fps_end;
+    TIM_initTimestamp(&fps_start);
+    const unsigned int delay = 50;
+    int i;
+    for(i = 0; i < 10; i++){
+        TIM_sleepMillis(delay);
+    }
+    TIM_initTimestamp(&fps_end);
+    printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
+    printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
+    printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
+
+    TIM_freeTimestampData(&fps_start);
+    TIM_freeTimestampData(&fps_end);
+}
+
 void testSleep_fps(){
     TIM_Timestamp fps_start, fps_end;
     TIM_initTimestamp(&fps_start);
-    const unsigned int FPS = 60;
+    const unsigned int FPS = 117;
     int i;
     for(i = 0; i < FPS; i++){
         TIM_sleepFPS(FPS);
     }
     TIM_initTimestamp(&fps_end);
     printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
+    printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
+    printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
 
     TIM_freeTimestampData(&fps_start);
     TIM_freeTimestampData(&fps_end);
@@ -57,6 +76,8 @@ void testSleep_delay(){
     }
     TIM_initTimestamp(&fps_end);
     printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
+    printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
+    printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
 
     TIM_freeTimestampData(&fps_start);
     TIM_freeTimestampData(&fps_end);
@@ -68,8 +89,15 @@ int main()
 {
 
     printf("Hello world!\n");
+    puts("AAAA");
+    fflush(stdout);
 
+    puts("Const");
+    testSleep_const();
+
+    puts("\nFPS");
     testSleep_fps();
+    puts("\nDelay");
     testSleep_delay();
 
     return 0;

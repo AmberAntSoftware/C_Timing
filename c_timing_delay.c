@@ -3,7 +3,8 @@
 static unsigned long long int X_TIM_CALC_DELAY = 0;
 static void X_TIM_X_initCalcDelayNano(){
 
-    const unsigned int GRANULARITY = 100000;/* 1/10 ms */
+    //*
+    const unsigned int GRANULARITY = 100000;
     const unsigned int ROUNDS = 10;
     TIM_Timestamp start, end;
     unsigned long long int accu = 0;
@@ -29,6 +30,9 @@ static void X_TIM_X_initCalcDelayNano(){
 
     accu/=ROUNDS;
     X_TIM_CALC_DELAY = accu;
+    /*/
+    X_TIM_CALC_DELAY = 1;
+    //*/
 
 }
 

@@ -3,7 +3,9 @@
 
 #include <stdlib.h>
 
-#ifdef WIN32
+//#undef _WIN32
+
+#ifdef _WIN32
     #include <windows.h>
 #elif _POSIX_C_SOURCE >= 199309L
     #include <sys/time.h>
@@ -30,6 +32,7 @@ typedef enum TIM_ERROR_ENUM{
 
     typedef struct TIM_Timestamp{
         LARGE_INTEGER mark;
+        DWORD time;
     }TIM_Timestamp;
 
 #else
