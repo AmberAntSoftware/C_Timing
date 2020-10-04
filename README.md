@@ -9,7 +9,7 @@ Deficiencies
 Not intended for very high throughput.
 
 Windows timing system is limited to 2^64/(10^9 * clockFrequency) nanoseconds before rolls over.
-Commented attemped, but timeGetTime currently too inaccurate
+Commented attemped, but timeGetTime is currently too inaccurate for milisecond accuracy without further reading.
 
 
 Code Sample

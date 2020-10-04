@@ -1,14 +1,17 @@
 #include "c_timing.h"
 
 #ifdef _WIN32
-    static LARGE_INTEGER X_TIM_FREQUENCY = {0,0,0,0,0};
-    static void X_TIM_initFrequency(){
-        if(X_TIM_FREQUENCY.QuadPart == 0){
-            if(QueryPerformanceFrequency(&X_TIM_FREQUENCY) == 0){
-                X_TIM_FREQUENCY.QuadPart = 1;
-            }
+static LARGE_INTEGER TIM_X_FREQUENCY = {0,0,0,0,0};
+
+static void TIM_X_initFrequency(){
+
+    if(TIM_X_FREQUENCY.QuadPart == 0){
+        if(QueryPerformanceFrequency(&TIM_X_FREQUENCY) == 0){
+            TIM_X_FREQUENCY.QuadPart = 1;
         }
     }
+}
+
 #endif
 
 TIM_Timestamp* TIM_newTimestamp(){
@@ -24,24 +27,28 @@ TIM_Timestamp* TIM_newTimestamp(){
 }
 
 TIM_ERROR_ENUM TIM_initTimestamp(TIM_Timestamp *timestamp){
-    /**TODO include windows support**/
+
 #ifdef _WIN32
+
     timestamp->time = timeGetTime();
     if(QueryPerformanceCounter(&timestamp->mark) == 0){
         return TIM_ERROR_FAILURE;
     }
+
+#elif _POSIX_C_SOURCE >= 199309L
+
+    if(clock_gettime(CLOCK_REALTIME_ALARM, &timestamp->mark) != 0){
+        return TIM_ERROR_FAILURE;
+    }
+
 #else
 
-    #if _POSIX_C_SOURCE >= 199309L
-        if(clock_gettime(CLOCK_REALTIME_ALARM, &timestamp->mark) != 0){
-            return TIM_ERROR_FAILURE;
-        }
-    #else
-        if(gettimeofday(&timestamp->mark, NULL) !=0){
-            return TIM_ERROR_FAILURE;
-        }
-    #endif
+    if(gettimeofday(&timestamp->mark, NULL) !=0){
+        return TIM_ERROR_FAILURE;
+    }
+
 #endif
+
     return TIM_ERROR_SUCCESS;
 }
 
@@ -52,10 +59,8 @@ void TIM_freeTimestamp(TIM_Timestamp *timestamp){
 
 void TIM_freeTimestampData(TIM_Timestamp *timestamp){
 #ifdef _WIN32
+#elif _POSIX_C_SOURCE >= 199309L
 #else
-#if _POSIX_C_SOURCE >= 199309L
-#else
-#endif
 #endif
     return;
 }
@@ -67,16 +72,16 @@ unsigned long long int TIM_TimestampDiff(TIM_Timestamp *start, TIM_Timestamp *en
 #ifdef _WIN32
 
     //*
-    X_TIM_initFrequency();
+    TIM_X_initFrequency();
     unsigned long long int diff = end->mark.QuadPart;
     diff -= start->mark.QuadPart;
     diff *= TIM_X_NANOSECONDS_IN_SECOND;
     diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
-    diff /= X_TIM_FREQUENCY.QuadPart;
+    diff /= TIM_X_FREQUENCY.QuadPart;
 
     /*/
 
-    X_TIM_initFrequency();
+    TIM_X_initFrequency();
 
     unsigned long long int diffMillis;
     unsigned long long int diffNano;
@@ -94,32 +99,32 @@ unsigned long long int TIM_TimestampDiff(TIM_Timestamp *start, TIM_Timestamp *en
     diff = diffMillis;
     diff *= TIM_X_NANOSECONDS_IN_SECOND;
     diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
-    diff /= X_TIM_FREQUENCY.QuadPart;
+    diff /= TIM_X_FREQUENCY.QuadPart;
 
     diff = (end->time - start->time);//*1000000  / (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
 
     //*/
 
+#elif _POSIX_C_SOURCE >= 199309L
+
+    unsigned long long int diff = end->mark.tv_nsec;
+    diff -= start->mark.tv_nsec;
+    unsigned long long int tmp = end->mark.tv_sec;
+    tmp -= start->mark.tv_sec;
+    tmp *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff += tmp;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
+
 #else
 
-    #if _POSIX_C_SOURCE >= 199309L
-        unsigned long long int diff = end->mark.tv_nsec;
-        diff -= start->mark.tv_nsec;
-        unsigned long long int tmp = end->mark.tv_sec;
-        tmp -= start->mark.tv_sec;
-        tmp *= TIM_X_NANOSECONDS_IN_SECOND;
-        diff += tmp;
-        diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
-    #else
-        unsigned long long int diff = end->mark.tv_usec;
-        diff -= start->mark.tv_usec;
-        diff*=1000;
-        unsigned long long int tmp = end->mark.tv_sec;
-        tmp -= start->mark.tv_sec;
-        tmp *= 1000000000;
-        diff += tmp;
-        diff /= (1000000000/unitsPerSecond);
-    #endif
+    unsigned long long int diff = end->mark.tv_usec;
+    diff -= start->mark.tv_usec;
+    diff *= TIM_X_MICROSECONDS_IN_NANOSECOND;
+    unsigned long long int tmp = end->mark.tv_sec;
+    tmp -= start->mark.tv_sec;
+    tmp *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff += tmp;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
 
 #endif
 
@@ -157,42 +162,39 @@ TIM_ERROR_ENUM TIM_sleepNano(unsigned int nanoseconds) {
 
 #ifdef WIN32
 
-   // X_TIM_initFrequency();
-
     unsigned int microseconds = nanoseconds/TIM_X_MICROSECONDS_IN_NANOSECOND;
     LARGE_INTEGER start, end;
     QueryPerformanceCounter(&start);
-    if(microseconds >= 1000){
+    if(microseconds >= TIM_X_MICROSECONDS_IN_NANOSECOND){
         MMRESULT gran = timeBeginPeriod(1);
-        _sleep(microseconds/1000);
+        _sleep(microseconds/TIM_X_MICROSECONDS_PER_MILLISECOND);
         timeEndPeriod(gran);
     }
 
-    //**
-    X_TIM_initFrequency();
-
-
+    TIM_X_initFrequency();
     do{
         QueryPerformanceCounter(&end);
-    }while( (((end.QuadPart - start.QuadPart)*TIM_X_MICROSECONDS_IN_SECOND)/X_TIM_FREQUENCY.QuadPart) < microseconds);
-    //**/
+    }while( (((end.QuadPart - start.QuadPart)*TIM_X_MICROSECONDS_IN_SECOND)/TIM_X_FREQUENCY.QuadPart) < microseconds);
+
+#elif _POSIX_C_SOURCE >= 199309L
+
+    struct timespec timestamp;
+    timestamp.tv_sec = nanoseconds / TIM_X_NANOSECONDS_IN_SECOND;
+    timestamp.tv_nsec = (nanoseconds - (timestamp.tv_sec * TIM_X_NANOSECONDS_IN_SECOND));
+    if(nanosleep(&timestamp, NULL) == -1){
+        return TIM_ERROR_FAILURE;
+    }
+
 #else
-    #if _POSIX_C_SOURCE >= 199309L
-        struct timespec timestamp;
-        timestamp.tv_sec = nanoseconds / TIM_X_NANOSECONDS_IN_SECOND;
-        timestamp.tv_nsec = (nanoseconds - (timestamp.tv_sec * TIM_X_NANOSECONDS_IN_SECOND));
-        if(nanosleep(&timestamp, NULL) == -1){
-            return TIM_ERROR_FAILURE;
-        }
-    #else
-        nanoseconds/=1000;
-        if(nanoseconds == 0){
-            nanoseconds = 1;
-        }
-        if(usleep(nanoseconds) == -1){
-            return TIM_ERROR_FAILURE;
-        }
-    #endif
+
+    nanoseconds/=1000;
+    if(nanoseconds == 0){
+        nanoseconds = 1;
+    }
+    if(usleep(nanoseconds) == -1){
+        return TIM_ERROR_FAILURE;
+    }
+
 #endif
 
     return TIM_ERROR_SUCCESS;
@@ -200,6 +202,7 @@ TIM_ERROR_ENUM TIM_sleepNano(unsigned int nanoseconds) {
 
 
 TIM_ERROR_ENUM TIM_sleepFPS(unsigned int framesPerSecond){
+
     unsigned int nanoseconds = TIM_X_NANOSECONDS_IN_SECOND/framesPerSecond;
     return TIM_sleepNano(nanoseconds);
 }

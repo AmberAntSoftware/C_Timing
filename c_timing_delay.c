@@ -1,9 +1,11 @@
 #include "c_timing_delay.h"
 
+#ifdef _WIN32
+static unsigned long long int X_TIM_CALC_DELAY = 1;
+#else
 static unsigned long long int X_TIM_CALC_DELAY = 0;
 static void X_TIM_X_initCalcDelayNano(){
 
-    //*
     const unsigned int GRANULARITY = 100000;
     const unsigned int ROUNDS = 10;
     TIM_Timestamp start, end;
@@ -30,11 +32,9 @@ static void X_TIM_X_initCalcDelayNano(){
 
     accu/=ROUNDS;
     X_TIM_CALC_DELAY = accu;
-    /*/
-    X_TIM_CALC_DELAY = 1;
-    //*/
 
 }
+#endif // _WIN32
 
 static void X_TIM_initCalcDelayNano(){
     if(X_TIM_CALC_DELAY == 0){

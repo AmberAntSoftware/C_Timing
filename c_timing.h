@@ -3,15 +3,21 @@
 
 #include <stdlib.h>
 
-//#undef _WIN32
-
 #ifdef _WIN32
+
     #include <windows.h>
+
+    #define TIM_X_MICROSECONDS_PER_MILLISECOND 1000
+
 #elif _POSIX_C_SOURCE >= 199309L
+
     #include <sys/time.h>
     #include <time.h>
+
 #else
+
     #include <unistd.h>
+
 #endif
 
 #define TIM_X_NANOSECONDS_IN_SECOND 1000000000
@@ -28,30 +34,20 @@ typedef enum TIM_ERROR_ENUM{
     TIM_ERROR_FAILURE
 }TIM_ERROR_ENUM;
 
+
+typedef struct TIM_Timestamp{
 #ifdef _WIN32
 
-    typedef struct TIM_Timestamp{
-        LARGE_INTEGER mark;
-        DWORD time;
-    }TIM_Timestamp;
+    LARGE_INTEGER mark;
+    DWORD time;-
+#elif _POSIX_C_SOURCE >= 199309L
 
+    struct timespec mark;
 #else
 
-#if _POSIX_C_SOURCE >= 199309L
-
-    typedef struct TIM_Timestamp{
-        struct timespec mark;
-    }TIM_Timestamp;
-
-#else
-
-    typedef struct TIM_Timestamp{
-        struct timeval mark;
-    }TIM_Timestamp;
-
+    struct timeval mark;
 #endif
-
-#endif
+}TIM_Timestamp;
 
 
 TIM_Timestamp* TIM_newTimestamp();
@@ -59,7 +55,6 @@ TIM_ERROR_ENUM TIM_initTimestamp(TIM_Timestamp *timestamp);
 
 void TIM_freeTimestamp(TIM_Timestamp *timestamp);
 void TIM_freeTimestampData(TIM_Timestamp *timestamp);
-
 
 unsigned long long int TIM_TimestampDiff(TIM_Timestamp *start, TIM_Timestamp *end, unsigned int unitsPerSecond);
 unsigned long long int TIM_TimestampDiffMillis(TIM_Timestamp *start, TIM_Timestamp *end);
