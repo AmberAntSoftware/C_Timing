@@ -4,6 +4,13 @@ C library for conditional compiling to handle thread waits accurately in sub mil
 Building on Windows:
 link with -lwinmm for advanced timings, otherwise delays can be off by 10+ milliseconds
 
+Deficiencies
+=
+Not intended for very high throughput.
+
+Windows timing system is limited to 2^64/(10^9 * clockFrequency) nanoseconds before rolls over.
+Commented attemped, but timeGetTime currently too inaccurate
+
 
 Code Sample
 =
