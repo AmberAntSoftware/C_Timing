@@ -1,3 +1,15 @@
-https://stackoverflow.com/questions/1157209/is-there-an-alternative-sleep-function-in-c-to-milliseconds
+http://www.geisswerks.com/ryan/FAQS/timing.html
+
+https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep
+https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod
+https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timeendperiod
+https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timegettime
+https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter
+
+https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/ftime-ftime32-ftime64?view=vs-2019
+
 http://www.songho.ca/misc/timer/timer.html
 https://man7.org/linux/man-pages/man2/clock_gettime.2.html
+
+https://stackoverflow.com/questions/1157209/is-there-an-alternative-sleep-function-in-c-to-milliseconds
+
