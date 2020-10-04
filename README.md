@@ -8,7 +8,7 @@ Deficiencies
 =
 Not intended for very high throughput.
 
-Windows timing system is limited to 2^64/(10^9 * clockFrequency) nanoseconds before rolls over.
+Windows timing system is limited to 2^64/(10^9 * clockFrequency) nanoseconds before a LARGE_INTEGER will roll over.
 Commented attemped, but timeGetTime is currently too inaccurate for milisecond accuracy without further reading.
 
 
