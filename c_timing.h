@@ -39,7 +39,7 @@ typedef struct TIM_Timestamp{
 #ifdef _WIN32
 
     LARGE_INTEGER mark;
-    DWORD time;-
+    DWORD time;
 #elif _POSIX_C_SOURCE >= 199309L
 
     struct timespec mark;

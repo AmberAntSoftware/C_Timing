@@ -4,6 +4,8 @@
 static unsigned long long int X_TIM_CALC_DELAY = 1;
 #else
 static unsigned long long int X_TIM_CALC_DELAY = 0;
+#endif // _WIN32
+
 static void X_TIM_X_initCalcDelayNano(){
 
     const unsigned int GRANULARITY = 100000;
@@ -34,7 +36,6 @@ static void X_TIM_X_initCalcDelayNano(){
     X_TIM_CALC_DELAY = accu;
 
 }
-#endif // _WIN32
 
 static void X_TIM_initCalcDelayNano(){
     if(X_TIM_CALC_DELAY == 0){
