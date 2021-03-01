@@ -1,5 +1,10 @@
 #include "c_timing_delay.h"
 
+
+/*************************************
+Internal Computations
+*************************************/
+
 #ifdef _WIN32
 static unsigned long long int X_TIM_CALC_DELAY = 1;
 #else
@@ -43,9 +48,9 @@ static void X_TIM_initCalcDelayNano(){
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/*************************************
+Initialization
+*************************************/
 
 TIM_Delay* TIM_newDelayMillis(unsigned long long int targetMilliseconds){
     return TIM_newDelayNano(targetMilliseconds*TIM_X_MILLISECONDS_IN_NANOSECOND);
@@ -87,7 +92,10 @@ TIM_ERROR_ENUM TIM_initDelayNano(TIM_Delay *delay, unsigned long long int target
     if(TIM_initTimestamp(&delay->last) == TIM_ERROR_FAILURE){
         return TIM_ERROR_FAILURE;
     }
+
     delay->targetNanoseconds = targetNanoseconds;
+    delay->lastDiff = 0;
+    delay->totalDiff = 0;
 
     return TIM_ERROR_SUCCESS;
 }
@@ -96,22 +104,27 @@ TIM_ERROR_ENUM TIM_initDelayFPS(TIM_Delay *delay, unsigned long long int targetF
     return TIM_initDelayNano(delay, TIM_X_NANOSECONDS_IN_SECOND/targetFramesPerSecond);
 }
 
+/*************************************
+Deallocation
+*************************************/
+
 void TIM_freeDelay(TIM_Delay *delay){
     TIM_freeDelayData(delay);
     free(delay);
 }
+
 void TIM_freeDelayData(TIM_Delay *delay){
     TIM_freeTimestampData(&delay->last);
     return;
 }
 
-
-
-
-
-
-
+/*************************************
+Operations
+*************************************/
+#include <stdio.h>
 TIM_ERROR_ENUM TIM_DelaySleep(TIM_Delay *delay){
+
+    TIM_ERROR_ENUM action = TIM_ERROR_SUCCESS;
 
     X_TIM_initCalcDelayNano();
 
@@ -120,12 +133,27 @@ TIM_ERROR_ENUM TIM_DelaySleep(TIM_Delay *delay){
         return TIM_ERROR_FAILURE;
     }
 
-    unsigned long long int diff = TIM_TimestampDiffNano(&delay->last, &cur) + X_TIM_CALC_DELAY;
+    unsigned long long int diff = TIM_TimestampDiffNano(&delay->last, &cur);
 
     if(diff >= delay->targetNanoseconds){
-        return TIM_ERROR_NO_OP;
+
+        delay->lastDiff += diff;
+        action = TIM_ERROR_NO_OP;
     }else{
-        TIM_sleepNano(delay->targetNanoseconds - diff);
+
+        //printf("LastDif %llu\n", delay->lastDiff);
+        if(delay->lastDiff > 0){
+            TIM_sleepNano(
+                delay->targetNanoseconds - ((delay->lastDiff) %delay->targetNanoseconds)
+            );
+            delay->totalDiff += delay->lastDiff - delay->targetNanoseconds;
+            //puts("delay lag");
+        }else{
+            TIM_sleepNano(delay->targetNanoseconds - diff);
+        }
+
+        //printf("Raw Last: %llu\n", TIM_TimestampInNano(&delay->last));
+        delay->lastDiff = 0;
     }
 
     TIM_freeTimestampData(&cur);
@@ -135,7 +163,9 @@ TIM_ERROR_ENUM TIM_DelaySleep(TIM_Delay *delay){
         return TIM_ERROR_FAILURE;
     }
 
-
-    return TIM_ERROR_SUCCESS;
+    return action;
 }
 
+unsigned long long int TIM_DelayDroppedFrames(TIM_Delay *delay){
+    return delay->totalDiff/delay->targetNanoseconds;
+}

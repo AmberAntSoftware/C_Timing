@@ -145,6 +145,55 @@ unsigned long long int TIM_TimestampDiffNano(TIM_Timestamp *start, TIM_Timestamp
 
 
 
+
+
+unsigned long long int TIM_TimestampInUnits(TIM_Timestamp *mark, unsigned int unitsPerSecond){
+    #ifdef _WIN32
+
+    TIM_X_initFrequency();
+    unsigned long long int diff = end->mark.QuadPart;
+    diff *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
+    diff /= TIM_X_FREQUENCY.QuadPart;
+
+#elif _POSIX_C_SOURCE >= 199309L
+
+    unsigned long long int diff = mark->mark.tv_nsec;
+    unsigned long long int tmp = mark->mark.tv_sec;
+    tmp *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff += tmp;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
+
+#else
+
+    unsigned long long int diff = end->mark.tv_usec;
+    diff *= TIM_X_MICROSECONDS_IN_NANOSECOND;
+    unsigned long long int tmp = end->mark.tv_sec;
+    tmp *= TIM_X_NANOSECONDS_IN_SECOND;
+    diff += tmp;
+    diff /= (TIM_X_NANOSECONDS_IN_SECOND/unitsPerSecond);
+
+#endif
+    return diff;
+}
+
+unsigned long long int TIM_TimestampInMillis(TIM_Timestamp *mark){
+    return TIM_TimestampInUnits(mark, TIM_X_MILLISECONDS_IN_SECOND);
+}
+
+unsigned long long int TIM_TimestampInMicro(TIM_Timestamp *mark){
+    return TIM_TimestampInUnits(mark, TIM_X_MICROSECONDS_IN_SECOND);
+}
+
+unsigned long long int TIM_TimestampInNano(TIM_Timestamp *mark){
+    return TIM_TimestampInUnits(mark, TIM_X_NANOSECONDS_IN_SECOND);
+}
+
+
+
+
+
+
 TIM_ERROR_ENUM TIM_sleepMillis(unsigned int milliseconds) {
     return TIM_sleepNano(milliseconds*TIM_X_MILLISECONDS_IN_NANOSECOND);
 }
@@ -187,7 +236,7 @@ TIM_ERROR_ENUM TIM_sleepNano(unsigned int nanoseconds) {
 
 #else
 
-    nanoseconds/=1000;
+    nanoseconds/=TIM_X_MICROSECONDS_PER_MILLISECOND;
     if(nanoseconds == 0){
         nanoseconds = 1;
     }

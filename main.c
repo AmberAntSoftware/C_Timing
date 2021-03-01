@@ -13,6 +13,7 @@ void testSleep_timestamp(){
     TIM_Timestamp end;
     TIM_initTimestamp(&end);
     printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&start,&end));
+    printf("FRAMES: %u\n", i);
 }
 
 void testSleep_decay(){
@@ -38,6 +39,7 @@ void testSleep_const(){
     printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
     printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
     printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
+    printf("FRAMES: %u\n", i);
 
     TIM_freeTimestampData(&fps_start);
     TIM_freeTimestampData(&fps_end);
@@ -55,6 +57,7 @@ void testSleep_fps(){
     printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
     printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
     printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
+    printf("FRAMES: %u\n", i);
 
     TIM_freeTimestampData(&fps_start);
     TIM_freeTimestampData(&fps_end);
@@ -64,7 +67,7 @@ void testSleep_delay(){
     TIM_Timestamp fps_start, fps_end;
     TIM_Delay delay;
 
-    const unsigned int FPS = 111;
+    const unsigned int FPS = 333;
     TIM_initDelayFPS(&delay, FPS);
     TIM_DelaySleep(&delay);
     TIM_initTimestamp(&fps_start);
@@ -72,12 +75,42 @@ void testSleep_delay(){
     int i;
     for(i = 0; i < FPS; i++){
         TIM_DelaySleep(&delay);
-        TIM_sleepMillis((i%7)+1);
+        TIM_sleepMillis(((i&1)*7));
+        //TIM_sleepMillis((i%7)+1);
     }
     TIM_initTimestamp(&fps_end);
     printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
     printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
     printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
+    printf("FRAMES: %u\n", i);
+
+    TIM_freeTimestampData(&fps_start);
+    TIM_freeTimestampData(&fps_end);
+    TIM_freeDelayData(&delay);
+}
+
+
+void test_delay(unsigned int FPS__){
+    TIM_Timestamp fps_start, fps_end;
+    TIM_Delay delay;
+
+    const unsigned int FPS = FPS__;
+    TIM_initDelayFPS(&delay, FPS);
+    TIM_DelaySleep(&delay);
+    TIM_initTimestamp(&fps_start);
+
+    int i;
+    for(i = 0; i < FPS; i++){
+        TIM_DelaySleep(&delay);
+        //TIM_sleepMillis(((i&1)*7)+1);
+        TIM_sleepMillis((i%14)+1);
+    }
+    TIM_initTimestamp(&fps_end);
+    printf("Diff: %llu ms\n", TIM_TimestampDiffMillis(&fps_start,&fps_end));
+    printf("Diff: %llu us\n", TIM_TimestampDiffMicro(&fps_start,&fps_end));
+    printf("Diff: %llu ns\n", TIM_TimestampDiffNano(&fps_start,&fps_end));
+    printf("FRAMES: %u\n", i);
+    printf("DROPPED FRAMES: %llu\n", TIM_DelayDroppedFrames(&delay));
 
     TIM_freeTimestampData(&fps_start);
     TIM_freeTimestampData(&fps_end);
@@ -99,6 +132,9 @@ int main()
     testSleep_fps();
     puts("\nDelay");
     testSleep_delay();
+
+    puts("\nDelay Custom");
+    test_delay(123);
 
     return 0;
 }
